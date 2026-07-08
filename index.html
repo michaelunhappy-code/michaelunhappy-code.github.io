@@ -485,7 +485,6 @@ int main(){
     // 检查密码
     function checkPassword() {
         const input = document.getElementById("pwd-input").value;
-        // AKIOI 的 Hash 值为 62335865，使用哈希比对避免源码泄露明文
         if (simpleHash(input) === 62335865) {
             document.getElementById("login-container").style.display = "none";
             document.getElementById("main-content").style.display = "block";
