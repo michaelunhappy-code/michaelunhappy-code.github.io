@@ -3,507 +3,849 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>算法题解与分析</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-    <script>hljs.highlightAll();</script>
-
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']]
-            }
-        };
-    </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
+    <title>Web OS - HTML 独立版</title>
     <style>
-        :root {
-            --bg-color: #f6f8fa;
-            --card-bg: #ffffff;
-            --text-main: #24292f;
-            --text-muted: #57606a;
-            --border-color: #d0d7de;
-            --primary-color: #0969da;
-            --analysis-bg: #f0f8ff;
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #000; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+        #os-entry-btn {
+            position: fixed; bottom: 65px; right: 20px;
+            background: #0078d4; color: white; padding: 12px 24px;
+            border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer; font-weight: 500; z-index: 2147483647;
+            display: block; user-select: none; border: 1px solid rgba(255,255,255,0.2);
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-        }
-        
-        /* 密码验证界面样式 */
-        #login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 80vh;
-        }
-        .login-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(140, 149, 159, 0.2);
-            max-width: 400px;
-            width: 100%;
-        }
-        .login-card h2 {
-            margin-top: 0;
-            color: var(--text-main);
-        }
-        .login-card input {
-            width: 80%;
-            padding: 10px;
-            margin: 20px 0;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 16px;
-            outline: none;
-        }
-        .login-card input:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
-        }
-        .login-card button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 24px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .login-card button:hover {
-            background-color: #0353a4;
+        #os-entry-btn:hover { background: #106ebe; }
+
+        #os-desktop {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: none; box-sizing: border-box; background-color: #111;
+            background-size: cover; background-position: center; background-repeat: no-repeat;
         }
 
-        /* 主体内容初始隐藏 */
-        #main-content {
-            display: none;
+        #os-wallpaper-blur {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            z-index: 0; pointer-events: none;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
+        #os-sidebar, #os-taskbar, .os-window { pointer-events: auto; }
+
+        /* 左侧侧边栏 */
+        #os-sidebar {
+            position: absolute; top: 0; left: 0; width: 240px; height: calc(100vh - 45px);
+            background: rgba(40, 40, 45, 0.4); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border-right: 1px solid rgba(255,255,255,0.1); color: white; display: flex; flex-direction: column;
+            box-shadow: 5px 0 25px rgba(0,0,0,0.3);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
         }
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 20px 0;
+        #sidebar-toggle {
+            position: absolute; right: -24px; top: 50%; transform: translateY(-50%);
+            width: 24px; height: 50px; background: rgba(40, 40, 45, 0.9); color: white;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            border-radius: 0 6px 6px 0; border: 1px solid rgba(255,255,255,0.2); border-left: none;
+            font-size: 12px; z-index: 101; transition: background 0.2s;
         }
-        header h1 {
-            margin: 0;
-            font-size: 2.2em;
+        #sidebar-toggle:hover { background: rgba(80, 80, 85, 0.9); }
+
+        .sidebar-top-bar { display: flex; padding: 8px; gap: 4px; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-create-btn {
+            flex: 1; padding: 6px 4px; font-size: 11px; color: #fff; background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 3px; cursor: pointer; text-align: center; white-space: nowrap;
         }
-        .problem-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 3px 6px rgba(140, 149, 159, 0.15);
+        .sidebar-create-btn:hover { background: rgba(255,255,255,0.2); }
+        .sidebar-folder-view { padding: 12px; flex-grow: 1; overflow-y: auto; }
+        .folder-tree-title { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 8px; user-select:none; }
+
+        .file-node {
+            padding: 6px 8px 6px 16px; font-size: 13px; color: #fff; cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between; border-radius: 4px;
         }
-        .problem-card h2 {
-            margin-top: 0;
-            border-bottom: 2px solid var(--bg-color);
-            padding-bottom: 10px;
-            color: var(--primary-color);
+        .file-node:hover { background: rgba(255,255,255,0.15); }
+        .file-info-part { display: flex; align-items: center; gap: 8px; pointer-events: none; }
+
+        .file-raw-delete-btn {
+            color: #ff5f56; font-weight: bold; font-size: 16px; padding: 0 6px;
+            cursor: pointer; opacity: 0; transition: opacity 0.1s, transform 0.1s;
         }
-        .description, .io-section {
-            margin-bottom: 20px;
+        .file-node:hover .file-raw-delete-btn { opacity: 1; }
+        .file-raw-delete-btn:hover { transform: scale(1.3); color: #ff3b30; }
+
+        /* 底部任务栏 */
+        #os-taskbar {
+            position: absolute; bottom: 0; left: 0; width: 100vw; height: 45px;
+            background: rgba(25, 25, 30, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 15px; box-sizing: border-box; border-top: 1px solid rgba(255,255,255,0.1); color: white; user-select: none;
+            z-index: 102;
         }
-        .analysis {
-            background-color: var(--analysis-bg);
-            border-left: 4px solid var(--primary-color);
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            border-radius: 0 6px 6px 0;
-            font-size: 0.95em;
+        .taskbar-left { display: flex; align-items: center; gap: 10px; height: 100%; }
+        .taskbar-search-box { background: rgba(255,255,255,0.85); border: none; border-radius: 4px; padding: 6px 12px; width: 180px; font-size: 12px; color: #333; outline: none; transition: width 0.2s;}
+        .taskbar-search-box:focus { width: 250px; background: #fff; }
+        .taskbar-icon-btn { font-size: 18px; cursor: pointer; padding: 6px 10px; border-radius: 4px; display: flex; align-items: center; }
+        .taskbar-icon-btn:hover { background: rgba(255,255,255,0.1); }
+        #os-exit-btn { background: rgba(220, 53, 69, 0.8); color: white; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        #os-exit-btn:hover { background: #dc3545; }
+        #os-clock { font-size: 12px; color: #ccc; text-align: right; line-height:1.2; }
+
+        /* 标准桌面窗体结构 */
+        .os-window {
+            position: absolute; top: 100px; left: 300px; width: 780px; height: 580px;
+            background: #1e1e1e; border: 1px solid #444; border-radius: 6px; display: flex; flex-direction: column;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6); overflow: hidden; min-width: 450px; min-height: 300px;
         }
-        .analysis h4 {
-            margin: 0 0 10px 0;
-            color: var(--primary-color);
-            font-size: 1.1em;
+        .os-window-header {
+            background: #2d2d2d; padding: 0 0 0 12px; display: flex; justify-content: space-between; align-items: center;
+            cursor: move; user-select: none; color: #ddd; font-size: 13px; border-bottom: 1px solid #3c3c3c; height: 32px;
         }
-        .analysis p:last-child {
-            margin-bottom: 0;
+        .window-controls-group { display: flex; align-items: center; height: 100%; gap: 4px; }
+        .win-btn-save { color: #57a6ff; font-size: 12px; cursor: pointer; user-select: none; font-weight: bold; padding: 0 8px; }
+        .win-btn-save:hover { color: #79b8ff; }
+        .os-window-close {
+            width: 42px; height: 32px; color: #aaa; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.1s;
         }
-        .io-section h4 {
-            margin: 10px 0 5px 0;
-            color: var(--text-main);
-        }
-        .io-section p {
-            margin: 0 0 10px 0;
-            background: var(--bg-color);
-            padding: 10px;
-            border-radius: 6px;
-            font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
-            font-size: 0.9em;
-        }
-        pre {
-            margin: 0;
-            border-radius: 6px;
-        }
-        code {
-            border-radius: 6px;
-            font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
-            font-size: 0.95em;
-        }
-        img {
-            max-width: 100%;
-            border-radius: 6px;
-            margin: 10px 0;
-        }
+        .os-window-close:hover { background: #e81123 !important; color: #fff !important; }
+        .os-window-body { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .os-window-resize-handle { position: absolute; bottom: 0; right: 0; width: 14px; height: 14px; cursor: se-resize; z-index: 99999; background: transparent; }
+
+        /* 浏览器窗体专用 */
+        .browser-container { display: flex; flex-direction: column; height: 100%; background: #fff; color: #333; }
+        .browser-toolbar { display: flex; padding: 8px 12px; background: #f1f3f4; border-bottom: 1px solid #ddd; gap: 8px; align-items: center; }
+        .browser-btn { background: transparent; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: background 0.2s; color: #5f6368; }
+        .browser-btn:hover { background: #e8eaed; }
+        .browser-url-input { flex-grow: 1; padding: 6px 16px; border-radius: 20px; border: 1px solid #dfe1e5; outline: none; font-size: 13px; background: #fff; transition: box-shadow 0.2s; }
+        .browser-url-input:focus { box-shadow: 0 1px 6px rgba(32,33,36,0.28); border-color: rgba(223,225,229,0); }
+        .browser-viewport { flex-grow: 1; position: relative; }
+        .browser-iframe { width: 100%; height: 100%; border: none; background: #fff; }
+
+        /* 代码编辑器区域 */
+        .code-editor-container { display: flex; flex-grow: 1; background: #1e1e1e; overflow: hidden; position: relative; flex-direction: column; }
+        .vscode-tabs-bar { height: 30px; background: #2d2d2d; display: flex; align-items: center; justify-content: space-between; padding-right: 12px; border-bottom: 1px solid #252526; user-select: none; }
+        .vscode-tab-item { background: #1e1e1e; color: #fff; height: 100%; display: flex; align-items: center; padding: 0 16px; font-size: 12px; border-right: 1px solid #252526; gap: 6px; font-family: monospace; }
+        .vscode-run-btn { color: #4ec9b0; cursor: pointer; font-size: 14px; padding: 4px 12px; border-radius: 4px; display: flex; align-items: center; font-weight: bold; background: rgba(78,201,176,0.1); }
+        .vscode-run-btn:hover { background: rgba(78,201,176,0.25); color: #4cee9f; }
+        .code-editor-main-split { display: flex; flex-grow: 1; overflow: hidden; position: relative; height: 55%; }
+        .code-gutter { width: 48px; background: #1e1e1e; border-right: 1px solid #2d2d2d; color: #858585; text-align: right; padding: 12px 10px 12px 0; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.5; user-select: none; overflow: hidden; box-sizing: border-box; }
+        .code-gutter div { height: 21px; }
+        .code-textarea-wrap { flex-grow: 1; position: relative; height: 100%; background: #1e1e1e; }
+        .os-textarea { width: 100%; height: 100%; background: transparent; color: #d4d4d4; font-family: 'Consolas', monospace; font-size: 14px; padding: 12px; border: none; resize: none; outline: none; box-sizing: border-box; line-height: 1.5; overflow-y: auto; white-space: pre; caret-color: #aeafad; }
+
+        .vscode-terminal-panel { height: 40%; background: #141414; border-top: 1px solid #2d2d2d; display: flex; flex-direction: column; color: #cccccc; font-family: 'Consolas', monospace; }
+        .terminal-header { height: 26px; background: #1e1e1e; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; font-size: 11px; color: #aaa; border-bottom: 1px solid #252526; user-select: none; }
+        .terminal-header span.active { color: #fff; border-bottom: 2px solid #007acc; font-weight: bold; padding: 4px 0; }
+        .terminal-main-layout { display: flex; flex-grow: 1; overflow: hidden; }
+        .terminal-body { flex: 7; padding: 10px 12px; overflow-y: auto; font-size: 13px; line-height: 1.4; color: #33ff33; white-space: pre-wrap; background: #141414; }
+        .terminal-stdin-area { flex: 3; background: #1c1c1c; border-left: 1px solid #2d2d2d; display: flex; flex-direction: column; }
+        .stdin-title { font-size: 11px; color: #da70d6; padding: 4px 8px; background: #252526; user-select: none; font-weight: bold;}
+        .os-stdin-input { flex-grow: 1; background: transparent; color: #ffb3ff; font-family: 'Consolas', monospace; font-size: 13px; padding: 8px; border: none; resize: none; outline: none; line-height: 1.4; }
+        .vscode-status-bar { height: 22px; background: #007acc; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; font-size: 12px; user-select: none; }
+
+        /* Word 套件 */
+        .word-container { display: flex; flex-direction: column; height: 100%; background: #f3f2f1; color: #333; }
+        .word-ribbon { background: #2b579a; color: white; padding: 0 12px; font-size: 12px; display: flex; gap: 18px; align-items: center; height: 28px; user-select: none;}
+        .word-page-viewport { flex-grow: 1; overflow-y: auto; padding: 25px; display: flex; justify-content: center; }
+        .word-page { background: white; width: 100%; max-width: 650px; min-height: 500px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); padding: 45px; box-sizing: border-box; outline: none; font-family: system-ui; font-size: 15px; line-height: 1.6; }
+
+        /* Excel 套件 */
+        .excel-container { display: flex; flex-direction: column; height: 100%; background: #fff; color: #333; font-size: 12px; }
+        .excel-ribbon { background: #107c41; color: white; padding: 4px 12px; font-size: 12px; display: flex; gap: 15px; align-items: center; height: 26px; user-select: none; }
+        .excel-formula-bar { background: #f3f2f1; border-bottom: 1px solid #d2d0ce; padding: 4px 12px; display: flex; align-items: center; gap: 8px; box-sizing: border-box;}
+        .excel-formula-input { flex-grow: 1; border: 1px solid #d2d0ce; padding: 2px 6px; background: white; outline: none; font-family: monospace; }
+        .excel-grid-viewport { flex-grow: 1; overflow: auto; background: #f3f2f1; }
+        .excel-table { border-collapse: collapse; background: white; table-layout: fixed; width: max-content; }
+        .excel-table th { background: #f3f2f1; border: 1px solid #d2d0ce; font-weight: normal; color: #605e5c; text-align: center; height: 22px; user-select: none; }
+        .excel-table td { border: 1px solid #d2d0ce; padding: 0 6px; height: 22px; outline: none; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; box-sizing: border-box; }
+        .excel-table td.selected-cell { border: 2px solid #107c41 !important; background: #e1f2e9; }
+
+        /* 控制中心 */
+        .settings-body { padding: 20px; font-size: 13px; display: flex; flex-direction: column; gap: 15px; background: #252526; height:100%; box-sizing: border-box; color: #ddd; overflow-y: auto; }
+        .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .settings-slider { flex-grow: 1; cursor: pointer; accent-color: #0078d4; }
+        .settings-input { flex-grow: 1; background: #3c3c3c; border: 1px solid #555; color: white; padding: 4px 8px; outline: none; font-family: monospace; }
+        .model-btn { cursor: pointer; border: none; padding: 4px 8px; font-weight: bold; border-radius: 3px; font-size: 14px; line-height: 1; }
+        .model-btn-add { background: #0078d4; color: white; }
+        .model-btn-add:hover { background: #106ebe; }
+        .model-btn-del { background: #d83b01; color: white; }
+        .model-btn-del:hover { background: #ea4a1f; }
+        .settings-file-upload { color: white; background: #3c3c3c; border: 1px solid #555; padding: 4px; border-radius: 3px; font-size: 12px; }
     </style>
 </head>
 <body>
 
-<div id="login-container">
-    <div class="login-card">
-        <h2>🔒 访问受限</h2>
-        <p>请输入访问密码以查看题解源代码</p>
-        <input type="password" id="pwd-input" placeholder="输入密码...">
-        <br>
-        <button onclick="checkPassword()">验证并解锁</button>
+    <div id="os-entry-btn">💻 进入桌面模式</div>
+
+    <div id="os-desktop">
+        <div id="os-wallpaper-blur"></div>
+        <div id="os-sidebar">
+            <div id="sidebar-toggle">◀</div>
+            <div class="sidebar-top-bar">
+                <div class="sidebar-create-btn" id="sbar-new-txt">+ 新建.txt</div>
+                <div class="sidebar-create-btn" id="sbar-new-cpp">+ 新建.cpp</div>
+                <div class="sidebar-create-btn" id="sbar-new-xlsx" style="color:#107c41;font-weight:bold;">X 新建Excel</div>
+                <div class="sidebar-create-btn" id="sbar-new-docx" style="color:#2b579a;font-weight:bold;">W 新建Word</div>
+            </div>
+            <div class="sidebar-folder-view">
+                <div class="folder-tree-title">WORKSPACE EXPLORER <span>∨</span></div>
+                <div class="folder-node">📂 SRC_CORE</div>
+                <div id="os-sidebar-file-list" style="margin-top: 8px;"></div>
+            </div>
+        </div>
+        <div id="os-taskbar">
+            <div class="taskbar-left">
+                <input type="text" class="taskbar-search-box" id="global-search" placeholder="在这里输入你想搜索的应用/内容">
+                <div class="taskbar-icon-btn" id="taskbar-browser-btn" title="系统浏览器">🌐</div>
+                <div class="taskbar-icon-btn" id="taskbar-settings-btn" title="系统设置">⚙️</div>
+                <div id="os-exit-btn">⏻ 退出桌面</div>
+            </div>
+            <div id="os-clock">00:00:00</div>
+        </div>
     </div>
-</div>
 
-<div id="main-content">
-    <div class="container">
-        <header>
-            <h1>💻 算法竞赛题解合集</h1>
-            <p>包含四道经典算法题的题目描述、深入分析与 C++ 标准解答</p>
-        </header>
+    <script>
+        (function() {
+            'use strict';
 
-        <article class="problem-card">
-            <h2>1. 巧克力广告调查</h2>
-            <div class="description">
-                <p>小明最近看起了电视广告。一则广告上说：“我们的 XX 巧克力，$100\%$ 的孩子都爱吃！” 于是小明调查起了 XX 巧克力，发现他们只对一个孩子做过测试，他爱吃......（$1 / 1 = 100\%$）</p>
-                <p>于是，小明就想：照他们这个逻辑，如果说 “$50\%$ 的孩子都爱喝”，那么他们有可能只对两个孩子做过测试；同样地，如果说 “$20\%$ 的孩子都爱喝”，那么他们有可能只对五个孩子做过测试。</p>
-                <p>那么，如果说，$P\%$ 的孩子都爱喝（$P$ 是一个正整数），那么至少需要对几个孩子做测试才有可能呢？（这里，我们认为 $P\%$ 是一个精确的数，并不是通过四舍五入得到的数）</p>
-            </div>
-            
-            <div class="analysis">
-                <h4>💡 题解分析</h4>
-                <p>本题的核心是求一个最简分数的隐式分母。题目给定了一个百分数 $P\%$，它可以表示为分数 $\frac{P}{100}$。假设总共调查了 $X$ 个孩子，其中有 $Y$ 个孩子爱吃，那么一定满足 $\frac{Y}{X} = \frac{P}{100}$。</p>
-                <p>为了求出“最少”需要测试的孩子数量，实际上就是要求解等式右边分数的**最简形式**下的分母。我们将分子分母同时除以它们的最大公约数（$\gcd$）即可：</p>
-                <p>$$X_{min} = \frac{100}{\gcd(P, 100)}$$</p>
-                <p>代码中通过辗转相除法实现求最大公约数 `gcd(a, b)` 函数，然后直接输出 `100 / gcd(P, 100)` 即为答案。</p>
-            </div>
+            const desktop = document.getElementById('os-desktop');
+            const entryBtn = document.getElementById('os-entry-btn');
+            const wallpaperBlur = document.getElementById('os-wallpaper-blur');
 
-            <div class="io-section">
-                <h4>输入格式</h4>
-                <p>输入一行一个正整数 $P$。</p>
-                <h4>输出格式</h4>
-                <p>输出一个正整数 $X$，表示至少需要对 $X$ 个孩子做测试。</p>
-            </div>
-            <div class="code-block">
-<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
-using namespace std;
-int gcd(int a,int b){
-    return b? gcd(b,a%b):a;
-}
-int main(){
-    // freopen("ad.in","r",stdin);
-    // freopen("ad.out","w",stdout);
-    int x;
-    cin&gt;&gt;x;
-    cout&lt;&lt;100/gcd(x,100)&lt;&lt;endl;
-    return 0;
-}</code></pre>
-            </div>
-        </article>
-
-        <article class="problem-card">
-            <h2>2. 中国结穿线问题</h2>
-            <div class="description">
-                <p>小明最近迷上了中国结。在一块 $N*N(N=2^k)$ 的板上，每一行每一列都有一个点。$(x,y)$ 表示第 $x$ 行第 $y$ 列的点。如图所示:</p>
-                <img src="https://www.xmoj.tech/upload/image/20210711/20210711231520_92229.jpg" alt="中国结图1">
-                <p>第一次，他会穿两根线，穿线之后如图所示：</p>
-                <img src="https://www.xmoj.tech/upload/image/20210711/20210711231549_29756.jpg" alt="中国结图2">
-                <p>第二次，他会穿四根线（他不会拆掉前面穿过的线），穿线之后如图所示：</p>
-                <img src="https://www.xmoj.tech/upload/image/20210711/20210711231630_87855.jpg" alt="中国结图3">
-                <p>也就是说，对于 $(2^k)*(2^k)$ 的板，他要穿 $k$ 次线，第 $i$ 次穿线要穿 $2^i$ 根线。</p>
-                <p>在穿线的过程当中，小明想知道相邻的两个点之间有没有线相隔。你能帮忙回答这个问题吗？</p>
-            </div>
-
-            <div class="analysis">
-                <h4>💡 题解分析</h4>
-                <p>这是一道找规律的题目。初始板子大小为 $2^k \times 2^k$。每次执行穿线（$0$ 操作）后，相当于把空间的分割线密度加倍。</p>
-                <p>通过观察可以发现：设当前已经执行了 $cnt$ 次 $0$ 操作，那么相邻两根线之间的距离刚好是 $2^{k-cnt}$。如果我们要判断相邻的两个点之间是否有线相隔，我们只需找出这两个点在这条维度上较小的那个坐标值（设为 $minn$）。</p>
-                <p>因为题目保证两点相邻，即绝对值之差为 1，只要较小的那个坐标 $minn$ 能够被当前线间距 $2^{k-cnt}$ 整除（即 `minn % (1 << (k-cnt)) == 0`），那么这两个点之间就必定存在一条分割线。通过 `min()` 判断两点所在的相对方位，并用位运算（或 `pow2` 函数）计算步长，就能以 $O(1)$ 的时间复杂度快速回答每个询问。</p>
-            </div>
-
-            <div class="io-section">
-                <h4>输入格式</h4>
-                <p>第一行，两个整数 $k,m$，表示 $N=2^k$，一共有 $m$ 个操作。<br>
-                   接下来 $m$ 行，有两种操作：<br>
-                   $0$ 表示穿了一次线。<br>
-                   $1$ $x_1$ $y_1$ $x_2$ $y_2$ 表示询问 $(x_1,y_1)$ 与 $(x_2,y_2)$ 之间有无线相隔。<br>
-                   保证 $|x_1-x_2|+|y_1-y_2|=1$，且 $0$ 操作的数量不超过 $k$ 次。
-                </p>
-                <h4>输出格式</h4>
-                <p>对每个 $1$ 操作，输出一行一个 $0$ 或 $1$，$1$ 表示有线相隔，$0$ 表示无线相隔。</p>
-            </div>
-            <div class="code-block">
-<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
-using namespace std;
-int k,m;
-int cnt;
-int pow2(int x){
-    return (1&lt;&lt;x);
-}
-int main(){
-    freopen("bend.in","r",stdin);
-    freopen("bend.out","w",stdout);
-    cin&gt;&gt;k&gt;&gt;m;
-    while(m--){
-        int id;
-        cin&gt;&gt;id;
-        if(id==0){
-            cnt++;
-        }
-        else{
-            int x1,y1,x2,y2;
-            cin&gt;&gt;x1&gt;&gt;y1&gt;&gt;x2&gt;&gt;y2;
-            if(x1==x2){
-                int minn=min(y1,y2);
-                if(minn%(pow2(k-cnt))==0){
-                    cout&lt;&lt;1&lt;&lt;endl;
+            // --- 1. 核心持久化数据中心 ---
+            let DEFAULT_OS_DATA = {
+                files: [
+                    { id: 'f1', name: 'README.txt', type: 'txt', content: '欢迎来到 HTML 版 Web OS！\n\n【本次新增功能】\n1. 底部任务栏新增 🌐 浏览器图标，内置轻量化搜索。 \n2. 设置面板新增自定义壁纸功能。\n3. 原有沙箱编译、AI对话、Word/Excel完全脱离油猴依赖运行。' },
+                    { id: 'f2', name: 'main.cpp', type: 'cpp', content: '#include <iostream>\nusing namespace std;\n\nint main() {\n    int a, b;\n    cout << "请输入两个整数（在右侧输入框填写，用空格隔开）：" << endl;\n    if (cin >> a >> b) {\n        cout << "👉 远程编译计算结果：" << a << " + " << b << " = " << (a + b) << endl;\n    } else {\n        cout << "⚠️ 未检测到有效的输入数据！" << endl;\n    }\n    return 0;\n}' },
+                    { id: 'f3', name: '季度财务核算.xlsx', type: 'xlsx', content: [["指标项目","第一季度","第二季度","环比增长"],["业务营收","89000","104000","16.8%"]] },
+                    { id: 'f4', name: '商业计划书.docx', type: 'docx', content: '<div><font size="5"><b>智能系统深度重构计划</b></font></div>' }
+                ],
+                settings: {
+                    blur: 10,
+                    brightness: 40,
+                    apiKey: '',
+                    activeModel: 'gpt-4o',
+                    modelList: ['gpt-4o', 'gpt-3.5-turbo', 'claude-3-5-sonnet'],
+                    wallpaper: '' // 存储 base64 壁纸
                 }
-                else cout&lt;&lt;0&lt;&lt;endl;
+            };
+
+            let OS_DATA = JSON.parse(localStorage.getItem('MOCK_OS_DATA_V11')) || DEFAULT_OS_DATA;
+
+            // 迁移处理
+            if (!OS_DATA.settings.wallpaper && OS_DATA.settings.wallpaper !== '') {
+                OS_DATA.settings.wallpaper = '';
             }
-            else{
-                int minn=min(x1,x2);
-                if(minn%(pow2(k-cnt))==0){
-                    cout&lt;&lt;1&lt;&lt;endl;
+
+            function saveSystemData() { localStorage.setItem('MOCK_OS_DATA_V11', JSON.stringify(OS_DATA)); }
+
+            let zIndexCounter = 200000;
+
+            // 初始化壁纸
+            function applyWallpaperSettings() {
+                wallpaperBlur.style.backdropFilter = `blur(${OS_DATA.settings.blur}px)`;
+                wallpaperBlur.style.webkitBackdropFilter = `blur(${OS_DATA.settings.blur}px)`;
+                wallpaperBlur.style.background = `rgba(0, 0, 0, ${OS_DATA.settings.brightness / 100})`;
+                if (OS_DATA.settings.wallpaper) {
+                    desktop.style.backgroundImage = `url(${OS_DATA.settings.wallpaper})`;
+                } else {
+                    desktop.style.backgroundImage = 'none';
                 }
-                else cout&lt;&lt;0&lt;&lt;endl;
             }
-        }
-    }
-    return 0;
-}</code></pre>
-            </div>
-        </article>
 
-        <article class="problem-card">
-            <h2>3. 哆啦A梦的楼梯</h2>
-            <div class="description">
-                <p>小明梦见了哆啦A梦。</p>
-                <p>哆啦A梦在楼梯的顶端（第 $N$ 级），而小明在楼梯的底部（第 $0$ 级）。小明每次最多可以跨 $K$ 级。但是，有几级楼梯是坏的（保证第 $N$ 级楼梯是好的）。小明一旦踏上去，就会坠入万丈深渊。</p>
-                <p>你能帮他算算，有多少种跨楼梯的方式，最终可以让他与来到楼梯的顶层和哆啦A梦相聚吗?</p>
-            </div>
+            // --- 侧边栏及基础UI绑定 ---
+            const sidebar = document.getElementById('os-sidebar');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            let isSidebarOpen = true;
 
-            <div class="analysis">
-                <h4>💡 题解分析</h4>
-                <p>这是一道经典的**动态规划（DP）**爬楼梯问题的变形。常规的爬楼梯是每次走 $1$ 或 $2$ 步，而本题允许走 $1$ 到 $K$ 步，且有若干不可达的“坏楼梯”。</p>
-                <p>定义状态 $dp[i]$ 表示到达第 $i$ 级楼梯的方案数。状态转移方程为：</p>
-                <p>$$dp[i] = \sum_{j=\max(0, i-K)}^{i-1} dp[j]$$</p>
-                <p>在处理前，将所有损坏的楼梯位置标记为特殊的不可达状态（例如 `INF`）。在进行状态转移时，如果当前考察的 $dp[i]$ 是 `INF`，说明此处不可站立，直接 `continue` 跳过。同样，累加前面楼梯方案数时，也要避开那些标记为 `INF` 的楼梯点。初始条件 $dp[0] = 1$，且每次累加都需要对 $1000000007$ 取模，防止整型溢出。</p>
-            </div>
+            sidebarToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                isSidebarOpen = !isSidebarOpen;
+                sidebar.style.transform = isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)';
+                sidebarToggle.innerText = isSidebarOpen ? '◀' : '▶';
+            });
 
-            <div class="io-section">
-                <h4>输入格式</h4>
-                <p>第一行三个整数 $N$，$K$，$Z$。其中 $Z$ 表示坏的楼梯的个数（可能为 $0$）。<br>
-                   接下来一行 $Z$ 个正整数，表示哪些楼梯级是坏的，不能走（$Z$ 个正整数升序读入，且两两互不相同）。</p>
-                <h4>输出格式</h4>
-                <p>输出一行一个整数，表示方案数除以 $1000000007$ 的余数。</p>
-            </div>
-            <div class="code-block">
-<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
-using namespace std;
-const int N=1e5+5;
-const int MOD=1e9+7;
-const int INF=0x3f3f3f3f;
-typedef long long LL;
-LL my_max(LL a,LL b){
-    return a&gt;b? a:b;
-}
-LL dp[N];
-LL err[N];
-LL n,k,z;
-int main(){
-    freopen("feeling.in","r",stdin);
-    freopen("feeling.out","w",stdout);
-    cin&gt;&gt;n&gt;&gt;k&gt;&gt;z;
-    for(LL i=1;i&lt;=z;i++){
-        cin&gt;&gt;err[i];
-        dp[err[i]]=INF;
-    }
-    dp[0]=1;
-    for(LL i=1;i&lt;=n;i++){
-        if(dp[i]==INF){
-            continue;
-        }
-        for(LL j=my_max(0,i-k);j&lt;i;j++){
-            if(dp[j]!=INF){
-                dp[i]+=dp[j];
-                dp[i]%=MOD;
+            entryBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); desktop.style.display = 'block'; entryBtn.style.display = 'none';
+                applyWallpaperSettings();
+            });
+
+            document.getElementById('os-exit-btn').addEventListener('click', (e) => {
+                e.stopPropagation(); desktop.style.display = 'none'; entryBtn.style.display = 'block';
+            });
+
+            setInterval(() => {
+                const d = new Date();
+                const dateStr = d.toISOString().split('T')[0];
+                document.getElementById('os-clock').innerHTML =
+                    `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}<br><span style="font-size:10px;color:#aaa;">${dateStr}</span>`;
+            }, 1000);
+
+            // --- 全局搜索与 AI 唤起 ---
+            document.getElementById('global-search').addEventListener('input', (e) => {
+                const keyword = e.target.value.toLowerCase().trim();
+                if (keyword === '对话' || keyword === 'ai') {
+                    openAIChatWindow();
+                    e.target.value = '';
+                    document.querySelectorAll('.file-node').forEach(node => node.style.display = 'flex');
+                    return;
+                }
+                document.querySelectorAll('.file-node').forEach(node => {
+                    const fileName = node.querySelector('.file-info-part span:last-child').innerText.toLowerCase();
+                    node.style.display = fileName.includes(keyword) ? 'flex' : 'none';
+                });
+            });
+
+            // --- 侧边栏文件管理 ---
+            function renderSidebarFiles() {
+                const listContainer = document.getElementById('os-sidebar-file-list');
+                listContainer.innerHTML = '';
+                OS_DATA.files.forEach(file => {
+                    const el = document.createElement('div');
+                    el.className = 'file-node';
+                    let icon = '📄';
+                    if(file.type === 'cpp') icon = '⚙️';
+                    if(file.type === 'xlsx') icon = '📊';
+                    if(file.type === 'docx') icon = '📘';
+
+                    el.innerHTML = `
+                        <div class="file-info-part"><span>${icon}</span><span>${file.name}</span></div>
+                        <div class="file-raw-delete-btn" title="彻底删除文件">×</div>
+                    `;
+                    el.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('file-raw-delete-btn')) return;
+                        e.stopPropagation(); openAppWindow(file.id);
+                    });
+                    el.querySelector('.file-raw-delete-btn').addEventListener('click', (e) => {
+                        e.stopPropagation(); e.preventDefault();
+                        if(confirm(`确定要在系统沙盒中彻底删除文件 [${file.name}] 吗？`)) {
+                            OS_DATA.files = OS_DATA.files.filter(f => f.id !== file.id);
+                            saveSystemData(); renderSidebarFiles();
+                            const targetWindow = document.getElementById(`win-runtime-${file.id}`);
+                            if(targetWindow) targetWindow.remove();
+                        }
+                    });
+                    listContainer.appendChild(el);
+                });
             }
-        }
-    }
-    cout&lt;&lt;dp[n]&lt;&lt;endl;
-    return 0;
-}</code></pre>
-            </div>
-        </article>
 
-        <article class="problem-card">
-            <h2>4. 二元一次方程组求解</h2>
-            <div class="description">
-                <p>给定 $N$ 个二元一次方程。</p>
-                <p>第 $i$ 个二元一次方程为：$A_i * x + B_i * y = C_i$</p>
-                <p>如果这 $N$ 个方程形成的方程组无解，输出 “No solution!”</p>
-                <p>如果有唯一解，输出两行（其中 $a,b$ 为常数，保留三位小数）：</p>
-                <p>
-                    x=a <br>
-                    y=b
-                </p>
-                <p>如果不止一组解，输出“OK”。</p>
-            </div>
+            function createNewFile(type) {
+                const name = prompt(`请输入自定文件名(.${type}):`, `demo_${Date.now().toString().slice(-4)}.${type}`);
+                if (!name) return;
+                let content = "";
+                if (type === 'xlsx') content = [["","","",""]];
+                if (type === 'cpp') content = '#include <iostream>\nusing namespace std;\n\nint main() {\n    return 0;\n}';
+                if (type === 'docx') content = '<div>请输入文档内容...</div>';
 
-            <div class="analysis">
-                <h4>💡 题解分析</h4>
-                <p>本题考察对多元方程组解的判断，本质上是求解一次直线系统的交点。由于方程以浮点数形式输入和比对，涉及精度问题，必须使用一个极小值 `eps`（通常设为 `1e-8`）来判断两数是否相等。</p>
-                <ol>
-                    <li><strong>初筛：</strong> 如果读入的方程出现 $A=0, B=0$ 但 $C \neq 0$，立刻判定为不合法，直接输出 <code>No solution!</code>。</li>
-                    <li><strong>克莱姆法则求交点：</strong> 使用两层循环暴力枚举所有有效的直线组合。对于任意两条直线，计算行列式 $d = A_1B_2 - A_2B_1$。
-                        <ul>
-                            <li>如果 $d \neq 0$（即 <code>fabs(d) > eps</code>），说明两条直线不平行，必有唯一交点 $(x, y)$。此时立刻求出 $(x, y)$，并将这组解代入验证<strong>剩余所有的方程</strong>。如果全都满足，输出此唯一解；只要有一个不满足，说明有多条不共点的直线，整体无解输出 <code>No solution!</code>。</li>
-                            <li>如果 $d = 0$，说明这两条直线平行或重合。如果常数项不成比例（平行不相交），说明出现矛盾方程组，直接判定 <code>No solution!</code> 并结束。</li>
-                        </ul>
-                    </li>
-                    <li><strong>多解判断：</strong> 若以上所有的枚举都未产生唯一交点（意味着所有存在的合法直线都互相重合），则表示方程组有无数组解，最后输出 <code>OK</code>。</li>
-                </ol>
-            </div>
-
-            <div class="io-section">
-                <h4>输入格式</h4>
-                <p>第一行一个整数 $N$。<br>
-                   接下来 $N$ 行，每行三个整数（可能为 $0$ 或负数），第 $i$ 行的整数为 $A_i,B_i,C_i$。</p>
-                <h4>输出格式</h4>
-                <p>详见问题描述。</p>
-            </div>
-            <div class="code-block">
-<pre><code class="language-cpp">/*
-伪代码：
-定义方程结构体
-    输入（double）
-    如果方程是0x+0y=z 直接No Solution!
-    否则加入方程组
-    枚举每两个方程
-        如果不是矛盾的系数
-            解出来
-            对每个方程验证
-                如果不满足 -&gt; No Solution
-            如果所有的全部满足 -&gt; 输出 x,y
-    
-    最终 -&gt; 输出“OK”
-    所有的运算符(double)
-    "!=0" -&gt; "&gt;eps" "==0" -&gt; "&lt;eps"
-    输入使用double,fabs()
-*/
-#include &lt;bits/stdc++.h&gt;
-using namespace std;
-const double eps=1e-8;
-struct P{
-    double a,b,c;
-};
-int main(){
-    freopen("equation.in","r",stdin);
-    freopen("equation.out","w",stdout);
-    int n;
-    cin&gt;&gt;n;
-    vector&lt;P&gt; v;
-    for(int i=0;i&lt;n;i++){
-        double a,b,c;
-        cin&gt;&gt;a&gt;&gt;b&gt;&gt;c;
-        if(fabs(a)&lt;eps&amp;&amp;fabs(b)&lt;eps){
-            if(fabs(c)&gt;eps){
-                cout&lt;&lt;"No solution!"&lt;&lt;endl;
-                return 0;
+                const newFile = { id: 'f_' + Date.now(), name, type, content };
+                OS_DATA.files.push(newFile);
+                saveSystemData(); renderSidebarFiles(); openAppWindow(newFile.id);
             }
-        }
-        else{
-            v.push_back({a,b,c});
-        }
-    }
-    for(int i=0;i&lt;v.size();i++){
-        for(int j=i+1;j&lt;v.size();j++){
-            double d=v[i].a*v[j].b-v[j].a*v[i].b;
-            if(fabs(d)&gt;eps){
-                double x=(v[i].c*v[j].b-v[j].c*v[i].b)/d;
-                double y=(v[i].a*v[j].c-v[j].a*v[i].c)/d;
-                for(auto t:v){
-                    if(fabs(t.a*x+t.b*y-t.c)&gt;eps){
-                        cout&lt;&lt;"No solution!";
-                        return 0;
+
+            document.getElementById('sbar-new-txt').onclick = () => createNewFile('txt');
+            document.getElementById('sbar-new-cpp').onclick = () => createNewFile('cpp');
+            document.getElementById('sbar-new-xlsx').onclick = () => createNewFile('xlsx');
+            document.getElementById('sbar-new-docx').onclick = () => createNewFile('docx');
+            document.getElementById('taskbar-settings-btn').onclick = () => openSettingsPanel();
+            document.getElementById('taskbar-browser-btn').onclick = () => openBrowserWindow();
+
+            function escapeHTML(str) { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+            // --- AI 对话系统工厂 ---
+            function openAIChatWindow() {
+                const openWinId = `win-ai-chat-terminal`;
+                const activeModelName = OS_DATA.settings.activeModel;
+
+                if (document.getElementById(openWinId)) { document.getElementById(openWinId).style.zIndex = ++zIndexCounter; return; }
+
+                const win = document.createElement('div');
+                win.className = 'os-window'; win.id = openWinId;
+                win.style.zIndex = ++zIndexCounter;
+                win.style.width = '450px'; win.style.height = '550px';
+                win.style.top = '80px'; win.style.left = '320px';
+                win.innerHTML = `
+                    <div class="os-window-header">
+                        <span>🤖 AI 智能终端 (${activeModelName})</span>
+                        <div class="window-controls-group"><div class="os-window-close" title="关闭">×</div></div>
+                    </div>
+                    <div class="os-window-body" style="background: #1e1e1e; display: flex; flex-direction: column;">
+                        <div id="ai-chat-history" style="flex-grow: 1; padding: 15px; overflow-y: auto; color: #d4d4d4; font-family: 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6;">
+                            <div style="color: #4ec9b0; margin-bottom: 10px;">[System] AI 终端已初始化。当前计算模型: ${activeModelName}</div>
+                            ${!OS_DATA.settings.apiKey ? '<div style="color: #ff5f56; margin-bottom: 10px;">[Warning] 未检测到 API Key，请先在左下角设置中配置！</div>' : ''}
+                        </div>
+                        <div style="border-top: 1px solid #333; padding: 10px; background: #252526; display: flex;">
+                            <textarea id="ai-chat-input" style="flex-grow: 1; background: #3c3c3c; border: 1px solid #555; color: white; padding: 8px 12px; border-radius: 4px; outline: none; font-size: 13px; resize: none; height: 35px; line-height: 1.4; font-family: inherit;" placeholder="输入指令 (Enter 发送，Ctrl+Enter 换行)..."></textarea>
+                        </div>
+                    </div>
+                    <div class="os-window-resize-handle"></div>
+                `;
+                desktop.appendChild(win);
+
+                const historyPanel = win.querySelector('#ai-chat-history');
+                const chatInput = win.querySelector('#ai-chat-input');
+                let conversation = [];
+
+                chatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        if (e.ctrlKey) {
+                            e.preventDefault();
+                            const start = chatInput.selectionStart; const end = chatInput.selectionEnd;
+                            chatInput.value = chatInput.value.substring(0, start) + "\n" + chatInput.value.substring(end);
+                            chatInput.selectionStart = chatInput.selectionEnd = start + 1;
+                            return;
+                        }
+                        e.preventDefault();
+                        if (chatInput.value.trim() !== '') {
+                            const userMsg = chatInput.value.trim();
+                            chatInput.value = '';
+                            const safeUserMsg = escapeHTML(userMsg).replace(/\n/g, '<br>');
+                            historyPanel.innerHTML += `<div style="margin-bottom: 10px;"><b><span style="color:#57a6ff">You:</span></b><br>${safeUserMsg}</div>`;
+                            historyPanel.scrollTop = historyPanel.scrollHeight;
+
+                            if (!OS_DATA.settings.apiKey) { historyPanel.innerHTML += `<div style="margin-bottom: 10px; color: #ff5f56;">[Error] 缺少 API Key，请求被拦截。</div>`; return; }
+
+                            conversation.push({ role: "user", content: userMsg });
+                            historyPanel.innerHTML += `<div id="ai-typing" style="margin-bottom: 10px; color: #888;"><i>AI is typing...</i></div>`;
+                            historyPanel.scrollTop = historyPanel.scrollHeight;
+
+                            const targetModel = OS_DATA.settings.activeModel;
+                            
+                            // 原生 fetch 替代跨域请求，API必须支持 CORS
+                            fetch("https://api.apilio.ai/v1/chat/completions", {
+                                method: "POST",
+                                headers: {
+                                    "Authorization": "Bearer " + OS_DATA.settings.apiKey,
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({ model: targetModel, messages: conversation })
+                            })
+                            .then(response => response.json())
+                            .then(res => {
+                                const typingIndicator = win.querySelector('#ai-typing');
+                                if(typingIndicator) typingIndicator.remove();
+                                if (res.choices && res.choices.length > 0) {
+                                    const aiReply = res.choices[0].message.content;
+                                    conversation.push({ role: "assistant", content: aiReply });
+                                    const formattedReply = escapeHTML(aiReply).replace(/\n/g, '<br>');
+                                    historyPanel.innerHTML += `<div style="margin-bottom: 15px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px;"><b><span style="color:#4ec9b0">AI:</span></b><br>${formattedReply}</div>`;
+                                } else {
+                                    historyPanel.innerHTML += `<div style="margin-bottom: 15px; color: #ff5f56;">[Error] 接口返回格式异常或密钥限制</div>`;
+                                }
+                                historyPanel.scrollTop = historyPanel.scrollHeight;
+                            })
+                            .catch(err => {
+                                const typingIndicator = win.querySelector('#ai-typing');
+                                if(typingIndicator) typingIndicator.remove();
+                                historyPanel.innerHTML += `<div style="margin-bottom: 15px; color: #ff5f56;">[Error] 网络连接失败，请检查浏览器的跨域拦截(CORS)或 API 状态。(${err.message})</div>`;
+                                historyPanel.scrollTop = historyPanel.scrollHeight;
+                            });
+                        }
                     }
+                });
+
+                win.addEventListener('mousedown', () => { win.style.zIndex = ++zIndexCounter; }, true);
+                win.querySelector('.os-window-close').onclick = () => win.remove();
+                bindWindowDragAndResize(win, win.querySelector('.os-window-header'), win.querySelector('.os-window-resize-handle'));
+            }
+
+            // --- 浏览器工厂 ---
+            function openBrowserWindow() {
+                const openWinId = `win-runtime-browser`;
+                if (document.getElementById(openWinId)) { document.getElementById(openWinId).style.zIndex = ++zIndexCounter; return; }
+
+                const win = document.createElement('div');
+                win.className = 'os-window'; win.id = openWinId;
+                win.style.zIndex = ++zIndexCounter;
+                win.style.width = '800px'; win.style.height = '600px';
+                win.style.top = '60px'; win.style.left = '280px';
+                win.innerHTML = `
+                    <div class="os-window-header"><span>🌐 系统浏览器</span><div class="window-controls-group"><div class="os-window-close">×</div></div></div>
+                    <div class="os-window-body">
+                        <div class="browser-container">
+                            <div class="browser-toolbar">
+                                <button class="browser-btn" id="b-back" title="后退">◀</button>
+                                <button class="browser-btn" id="b-refresh" title="刷新">↻</button>
+                                <input type="text" class="browser-url-input" id="b-url" placeholder="输入网址(https://...) 或直接搜索" value="">
+                                <button class="browser-btn" id="b-go" style="width: auto; padding: 0 12px; border-radius: 14px;">前往</button>
+                            </div>
+                            <div class="browser-viewport">
+                                <iframe id="b-iframe" class="browser-iframe" src="https://html.duckduckgo.com/html/"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="os-window-resize-handle"></div>
+                `;
+                desktop.appendChild(win);
+
+                const iframe = win.querySelector('#b-iframe');
+                const urlInput = win.querySelector('#b-url');
+                const bGo = win.querySelector('#b-go');
+                const bBack = win.querySelector('#b-back');
+                const bRefresh = win.querySelector('#b-refresh');
+
+                const navigate = () => {
+                    let val = urlInput.value.trim();
+                    if (!val) return;
+                    if (val.startsWith('http://') || val.startsWith('https://')) {
+                        iframe.src = val;
+                    } else if (val.includes('.') && !val.includes(' ')) {
+                        iframe.src = 'https://' + val;
+                        urlInput.value = iframe.src;
+                    } else {
+                        // 使用允许 iframe 的简易搜索引擎
+                        iframe.src = 'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(val);
+                    }
+                };
+
+                bGo.onclick = navigate;
+                urlInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') navigate(); });
+                bBack.onclick = () => { try { iframe.contentWindow.history.back(); } catch(e){} }; // 受跨域限制可能失效
+                bRefresh.onclick = () => { iframe.src = iframe.src; };
+
+                win.addEventListener('mousedown', () => { win.style.zIndex = ++zIndexCounter; }, true);
+                win.querySelector('.os-window-close').onclick = () => win.remove();
+                bindWindowDragAndResize(win, win.querySelector('.os-window-header'), win.querySelector('.os-window-resize-handle'));
+            }
+
+            // --- 跨组件视窗工厂 ---
+            function openAppWindow(fileId) {
+                const file = OS_DATA.files.find(f => f.id === fileId);
+                if (!file) return;
+
+                const openWinId = `win-runtime-${file.id}`;
+                if (document.getElementById(openWinId)) { document.getElementById(openWinId).style.zIndex = ++zIndexCounter; return; }
+
+                const win = document.createElement('div');
+                win.className = 'os-window'; win.id = openWinId;
+                win.style.zIndex = ++zIndexCounter;
+                const offset = (zIndexCounter % 8) * 20;
+                win.style.top = `${80 + offset}px`; win.style.left = `${280 + offset}px`;
+
+                win.innerHTML = `
+                    <div class="os-window-header">
+                        <span>${file.name}</span>
+                        <div class="window-controls-group">
+                            <div class="win-btn-save" title="一键安全打包下载到本地">💾 安全下载</div>
+                            <div class="os-window-close" title="关闭窗口">×</div>
+                        </div>
+                    </div>
+                    <div class="os-window-body"></div>
+                    <div class="os-window-resize-handle"></div>
+                `;
+                desktop.appendChild(win);
+
+                const bodyContainer = win.querySelector('.os-window-body');
+
+                if (file.type === 'txt' || file.type === 'cpp') {
+                    const isCpp = file.type === 'cpp';
+                    const editorContainer = document.createElement('div');
+                    editorContainer.className = 'code-editor-container';
+
+                    editorContainer.innerHTML = `
+                        <div class="vscode-tabs-bar">
+                            <div class="vscode-tab-item">⚙️ ${file.name}</div>
+                            ${isCpp ? '<div class="vscode-run-btn" title="编译并运行代码">▶ 运行代码</div>' : ''}
+                        </div>
+                        <div class="code-editor-main-split">
+                            <div class="code-gutter"><div>1</div></div>
+                            <div class="code-textarea-wrap"><textarea class="os-textarea" spellcheck="false"></textarea></div>
+                        </div>
+                        ${isCpp ? `<div class="vscode-terminal-panel">
+                            <div class="terminal-header"><div><span class="active">控制台真实输出 (Stdout / Stderr)</span></div><div style="color:#6a9955; font-size:10px;">由高可用加速专用编译沙盒驱动</div></div>
+                            <div class="terminal-main-layout">
+                                <div class="terminal-body">GNU C++ Compiler 就绪。\n期待您的代码运行指令...\n\n💡 提示：如果程序包含 cin/scanf 输入，请先在右侧注入测试数据！</div>
+                                <div class="terminal-stdin-area"><div class="stdin-title">标准输入 (Stdin Data)</div><textarea class="os-stdin-input" spellcheck="false" placeholder="👉 在此填写多行测试输入数据..."></textarea></div>
+                            </div>
+                        </div>` : ''}
+                        <div class="vscode-status-bar"><div>🔀 main* • LF</div><div style="display:flex;gap:12px;"><span class="ln-col-pointer">Ln 1, Col 1</span><span>UTF-8</span><span>${file.type.toUpperCase()}</span></div></div>
+                    `;
+                    bodyContainer.appendChild(editorContainer);
+
+                    const textarea = editorContainer.querySelector('.os-textarea');
+                    const gutter = editorContainer.querySelector('.code-gutter');
+                    textarea.value = file.content;
+                    const updateGutter = () => {
+                        const totalLines = textarea.value.split('\n').length;
+                        let gutterHTML = ''; for(let i=1; i<=totalLines; i++) { gutterHTML += `<div>${i}</div>`; }
+                        gutter.innerHTML = gutterHTML;
+                    };
+                    textarea.addEventListener('input', () => { file.content = textarea.value; saveSystemData(); updateGutter(); });
+                    textarea.addEventListener('scroll', () => { gutter.scrollTop = textarea.scrollTop; });
+                    textarea.addEventListener('keydown', function(e) {
+                        const start = this.selectionStart; const end = this.selectionEnd; const val = this.value;
+                        if (e.key === 'Enter') {
+                            const charBefore = val.charAt(start - 1); const charAfter = val.charAt(start);
+                            const linesBefore = val.substring(0, start).split('\n');
+                            const currentLine = linesBefore[linesBefore.length - 1];
+                            const baseIndentMatch = currentLine.match(/^(\s*)/);
+                            const baseIndent = baseIndentMatch ? baseIndentMatch[0] : '';
+                            if (charBefore === '{' && charAfter === '}') {
+                                e.preventDefault(); const innerIndent = baseIndent + "    ";
+                                this.value = val.substring(0, start) + "\n" + innerIndent + "\n" + baseIndent + val.substring(end);
+                                this.selectionStart = this.selectionEnd = start + 1 + innerIndent.length;
+                                file.content = this.value; saveSystemData(); updateGutter(); return;
+                            } else {
+                                e.preventDefault();
+                                this.value = val.substring(0, start) + "\n" + baseIndent + val.substring(end);
+                                this.selectionStart = this.selectionEnd = start + 1 + baseIndent.length;
+                                file.content = this.value; saveSystemData(); updateGutter(); return;
+                            }
+                        }
+                        const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+                        if (pairs[e.key] && isCpp) {
+                            e.preventDefault();
+                            this.value = val.substring(0, start) + e.key + pairs[e.key] + val.substring(end);
+                            this.selectionStart = this.selectionEnd = start + 1;
+                            file.content = this.value; saveSystemData(); updateGutter(); return;
+                        }
+                        if (e.key === 'Tab') { e.preventDefault(); this.value = val.substring(0, start) + "    " + val.substring(end); this.selectionStart = this.selectionEnd = start + 4; }
+                    });
+
+                    if(isCpp) {
+                        const termBody = editorContainer.querySelector('.terminal-body');
+                        const stdinInput = editorContainer.querySelector('.os-stdin-input');
+
+                        editorContainer.querySelector('.vscode-run-btn').onclick = () => {
+                            termBody.innerHTML = `[编译任务] 正在连接高可用备用节点，请求编译分配...\n`;
+                            
+                            // 替换原生的 fetch 实现
+                            fetch("https://ce.judge0.com/submissions?wait=true", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                                body: JSON.stringify({ source_code: textarea.value, language_id: 54, stdin: stdinInput.value })
+                            })
+                            .then(response => response.json())
+                            .then(res => {
+                                termBody.innerHTML = `[计算集群] 代码安全沙盒执行完毕：\n------------------------------------\n`;
+                                if (res.compile_output) termBody.innerHTML += `<span style="color: #ff5f56; font-weight:bold;">[GCC 语法错误]\n${res.compile_output}</span>\n`;
+                                if (res.stdout) termBody.innerHTML += res.stdout;
+                                if (res.stderr) termBody.innerHTML += `<span style="color: #ffaa00;">[运行时断言/异常]\n${res.stderr}</span>\n`;
+                                if (!res.stdout && !res.stderr && !res.compile_output) termBody.innerHTML += `(程序安全退出，回执状态: ${res.status ? res.status.description : 'Success'})`;
+                            })
+                            .catch(err => {
+                                termBody.innerHTML = `<span style="color:#ff5f56;">[连接失败] 无法握手专用编译计算节点。建议尝试切换网络重试。(${err.message})</span>`;
+                            });
+                        };
+                    }
+
+                    const lnColPointer = editorContainer.querySelector('.ln-col-pointer');
+                    const trackLnCol = () => {
+                        const textBeforeCursor = textarea.value.substring(0, textarea.selectionStart);
+                        const lines = textBeforeCursor.split('\n');
+                        lnColPointer.innerText = `Ln ${lines.length}, Col ${lines[lines.length - 1].length + 1}`;
+                    };
+                    textarea.addEventListener('keyup', trackLnCol); textarea.addEventListener('click', trackLnCol);
+                    updateGutter(); bindCtrlWheelZoom(textarea);
                 }
-                cout&lt;&lt;fixed&lt;&lt;setprecision(3)&lt;&lt;"x="&lt;&lt;x&lt;&lt;endl;
-                cout&lt;&lt;fixed&lt;&lt;setprecision(3)&lt;&lt;"y="&lt;&lt;y&lt;&lt;endl;
-                return 0;
-            }
-            else{
-                if(fabs(v[i].a*v[j].c-v[j].a*v[i].c)&gt;eps||fabs(v[i].b*v[j].c-v[j].b*v[i].c)&gt;eps){
-                    cout&lt;&lt;"No solution!";
-                    return 0;
+                else if (file.type === 'docx') {
+                    const wordUI = document.createElement('div');
+                    wordUI.className = 'word-container';
+                    wordUI.innerHTML = `
+                        <div class="word-ribbon">
+                            <span style="font-weight:bold; cursor:pointer;" onclick="document.execCommand('bold')">B 加粗</span>
+                            <span style="font-style:italic; cursor:pointer;" onclick="document.execCommand('italic')">I 斜体</span>
+                            <span style="text-decoration:underline; cursor:pointer;" onclick="document.execCommand('underline')">U 下划线</span>
+                        </div>
+                        <div class="word-page-viewport"><div class="word-page" contenteditable="true">${file.content}</div></div>
+                    `;
+                    bodyContainer.appendChild(wordUI);
+                    const pageEl = wordUI.querySelector('.word-page');
+                    pageEl.addEventListener('input', () => { file.content = pageEl.innerHTML; saveSystemData(); });
+                    bindCtrlWheelZoom(pageEl);
                 }
+                else if (file.type === 'xlsx') {
+                    const excelUI = document.createElement('div');
+                    excelUI.className = 'excel-container';
+                    let matrix = Array.isArray(file.content) ? file.content : [["","",""]];
+
+                    let tableHTML = `<table class="excel-table"><tr><th style="width:40px;"></th><th>A</th><th>B</th><th>C</th><th>D</th></tr>`;
+                    for (let r = 0; r < 20; r++) {
+                        tableHTML += `<tr><th style="font-weight:bold;">${r+1}</th>`;
+                        for (let c = 0; c < 4; c++) {
+                            let val = (matrix[r] && matrix[r][c]) ? matrix[r][c] : "";
+                            tableHTML += `<td contenteditable="true" data-row="${r}" data-col="${c}">${val}</td>`;
+                        }
+                        tableHTML += `</tr>`;
+                    }
+                    tableHTML += `</table>`;
+                    excelUI.innerHTML = `
+                        <div class="excel-ribbon"><span>开始</span></div>
+                        <div class="excel-formula-bar"><span style="font-weight:bold;color:#107c41;">fx</span><input type="text" class="excel-formula-input" id="f-bar-input" placeholder="单元格编辑..."></div>
+                        <div class="excel-grid-viewport">${tableHTML}</div>
+                    `;
+                    bodyContainer.appendChild(excelUI);
+
+                    const gridViewport = excelUI.querySelector('.excel-grid-viewport');
+                    const fInput = excelUI.querySelector('#f-bar-input');
+                    let activeCell = null;
+                    gridViewport.addEventListener('focusin', (e) => {
+                        if(e.target.tagName === 'TD') {
+                            if(activeCell) activeCell.classList.remove('selected-cell');
+                            activeCell = e.target; activeCell.classList.add('selected-cell'); fInput.value = activeCell.innerText;
+                        }
+                    });
+                    gridViewport.addEventListener('input', (e) => {
+                        if(e.target.tagName === 'TD') {
+                            const r = parseInt(e.target.getAttribute('data-row')); const c = parseInt(e.target.getAttribute('data-col'));
+                            fInput.value = e.target.innerText; if(!matrix[r]) matrix[r] = []; matrix[r][c] = e.target.innerText; file.content = matrix; saveSystemData();
+                        }
+                    });
+                    fInput.addEventListener('input', () => {
+                        if(activeCell) {
+                            activeCell.innerText = fInput.value; const r = parseInt(activeCell.getAttribute('data-row')); const c = parseInt(activeCell.getAttribute('data-col'));
+                            if(!matrix[r]) matrix[r] = []; matrix[r][c] = fInput.value; file.content = matrix; saveSystemData();
+                        }
+                    });
+                    bindCtrlWheelZoom(gridViewport);
+                }
+
+                // --- 离线文件下载流 ---
+                win.querySelector('.win-btn-save').onclick = (e) => {
+                    e.stopPropagation();
+                    let blob, downloadName = file.name;
+                    if (file.type === 'txt' || file.type === 'cpp') { blob = new Blob([file.content], { type: "text/plain;charset=utf-8" }); }
+                    else if (file.type === 'docx') { blob = new Blob([`<!DOCTYPE html><html><body>${file.content}</body></html>`], { type: "application/msword;charset=utf-8" }); downloadName = file.name.replace('.docx', '.doc'); }
+                    else if (file.type === 'xlsx') {
+                        let csvRawStr = "\ufeff"; let matrix = Array.isArray(file.content) ? file.content : [];
+                        matrix.forEach(row => { csvRawStr += row.map(v => `"${(v || '').replace(/"/g, '""')}"`).join(",") + "\r\n"; });
+                        blob = new Blob([csvRawStr], { type: "text/csv;charset=utf-8;" }); downloadName = file.name.replace('.xlsx', '.csv');
+                    }
+                    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = downloadName; link.click();
+                };
+
+                win.addEventListener('mousedown', () => { win.style.zIndex = ++zIndexCounter; }, true);
+                win.querySelector('.os-window-close').onclick = () => win.remove();
+                bindWindowDragAndResize(win, win.querySelector('.os-window-header'), win.querySelector('.os-window-resize-handle'));
             }
-        }
-    }
-    cout&lt;&lt;"OK"&lt;&lt;endl;
-    return 0;
-}</code></pre>
-            </div>
-        </article>
-    </div>
-</div>
 
-<script>
-    // 简单的字符串哈希函数，用于加密比对密码
-    function simpleHash(str) {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash &= hash; // 转换为 32位 整数
-        }
-        return hash;
-    }
+            // --- 控制面板 ---
+            function openSettingsPanel() {
+                if (document.getElementById('win-runtime-sys-settings')) { document.getElementById('win-runtime-sys-settings').style.zIndex = ++zIndexCounter; return; }
+                const win = document.createElement('div');
+                win.className = 'os-window'; win.id = 'win-runtime-sys-settings'; win.style.zIndex = ++zIndexCounter;
+                win.style.top = '140px'; win.style.left = '380px'; win.style.width = '480px'; win.style.height = '420px';
+                win.innerHTML = `
+                    <div class="os-window-header"><span>⚙️ 系统控制中心</span><div class="window-controls-group"><div class="os-window-close">×</div></div></div>
+                    <div class="os-window-body">
+                        <div class="settings-body">
+                            <div style="color:#4ec9b0; font-weight:bold; border-bottom: 1px solid #444; padding-bottom: 5px;">外观设置</div>
+                            <div class="settings-row"><span>模糊度:</span><input type="range" class="settings-slider" id="set-blur" min="0" max="25" value="${OS_DATA.settings.blur}"><span id="txt-blur" style="width:40px;">${OS_DATA.settings.blur}px</span></div>
+                            <div class="settings-row"><span>暗色遮罩:</span><input type="range" class="settings-slider" id="set-bright" min="0" max="95" value="${OS_DATA.settings.brightness}"><span id="txt-bright" style="width:40px;">${100 - OS_DATA.settings.brightness}%</span></div>
+                            
+                            <div style="color:#57a6ff; font-weight:bold; border-bottom: 1px solid #444; padding-bottom: 5px; margin-top:10px;">自定义桌面壁纸</div>
+                            <div class="settings-row">
+                                <input type="file" id="set-wallpaper" class="settings-file-upload" accept="image/*">
+                                <button class="model-btn model-btn-del" id="btn-del-wallpaper" style="font-size: 12px; padding: 6px;">重置删除壁纸</button>
+                            </div>
 
-    // 检查密码
-    function checkPassword() {
-        const input = document.getElementById("pwd-input").value;
-        if (simpleHash(input) === 62335865) {
-            document.getElementById("login-container").style.display = "none";
-            document.getElementById("main-content").style.display = "block";
-        } else {
-            alert("密码错误，请重新输入！");
-        }
-    }
+                            <div style="color:#da70d6; font-weight:bold; border-bottom: 1px solid #444; padding-bottom: 5px; margin-top:10px;">AI 终端配置 (apilio.ai)</div>
+                            <div class="settings-row"><span style="width:70px;">API Key:</span><input type="password" class="settings-input" id="set-apikey" placeholder="sk-..." value="${OS_DATA.settings.apiKey}"></div>
+                            <div class="settings-row" style="margin-top: 5px;">
+                                <span style="width:70px;">默认模型:</span><select class="settings-input" id="set-model-select" style="padding: 2px 8px;"></select>
+                                <button class="model-btn model-btn-add" id="btn-add-model" title="添加新模型">＋</button>
+                                <button class="model-btn model-btn-del" id="btn-del-model" title="删除当前选中的模型">－</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="os-window-resize-handle"></div>
+                `;
+                desktop.appendChild(win);
 
-    // 支持按下回车键直接验证
-    document.addEventListener("DOMContentLoaded", function() {
-        const input = document.getElementById("pwd-input");
-        input.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                checkPassword();
+                const sBlur = win.querySelector('#set-blur');
+                const sBright = win.querySelector('#set-bright');
+                const sApi = win.querySelector('#set-apikey');
+                const sModelSelect = win.querySelector('#set-model-select');
+                const sWallpaper = win.querySelector('#set-wallpaper');
+                const btnDelWallpaper = win.querySelector('#btn-del-wallpaper');
+
+                const renderModelOptions = () => {
+                    sModelSelect.innerHTML = '';
+                    OS_DATA.settings.modelList.forEach(m => {
+                        const opt = document.createElement('option'); opt.value = m; opt.innerText = m;
+                        if(m === OS_DATA.settings.activeModel) opt.selected = true; sModelSelect.appendChild(opt);
+                    });
+                };
+                renderModelOptions();
+
+                sBlur.oninput = (e) => { OS_DATA.settings.blur = e.target.value; win.querySelector('#txt-blur').innerText = `${e.target.value}px`; applyWallpaperSettings(); saveSystemData(); };
+                sBright.oninput = (e) => { OS_DATA.settings.brightness = e.target.value; win.querySelector('#txt-bright').innerText = `${100 - e.target.value}%`; applyWallpaperSettings(); saveSystemData(); };
+                sApi.oninput = (e) => { OS_DATA.settings.apiKey = e.target.value; saveSystemData(); };
+                
+                // 处理壁纸上传 (转 Base64 存储)
+                sWallpaper.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            OS_DATA.settings.wallpaper = event.target.result;
+                            applyWallpaperSettings();
+                            saveSystemData();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                };
+
+                // 重置壁纸
+                btnDelWallpaper.onclick = () => {
+                    OS_DATA.settings.wallpaper = '';
+                    sWallpaper.value = '';
+                    applyWallpaperSettings();
+                    saveSystemData();
+                };
+
+                sModelSelect.onchange = (e) => {
+                    OS_DATA.settings.activeModel = e.target.value; saveSystemData();
+                    const chatHeader = document.querySelector('#win-ai-chat-terminal .os-window-header span');
+                    if(chatHeader) chatHeader.innerText = `🤖 AI 智能终端 (${OS_DATA.settings.activeModel})`;
+                };
+                win.querySelector('#btn-add-model').onclick = () => {
+                    const newModel = prompt('请输入你要添加的新模型名称 (例如: gpt-4-turbo):');
+                    if(newModel && newModel.trim() !== '') {
+                        const cleanModel = newModel.trim();
+                        if(!OS_DATA.settings.modelList.includes(cleanModel)) { OS_DATA.settings.modelList.push(cleanModel); }
+                        OS_DATA.settings.activeModel = cleanModel; saveSystemData(); renderModelOptions();
+                    }
+                };
+                win.querySelector('#btn-del-model').onclick = () => {
+                    if(OS_DATA.settings.modelList.length <= 1) { alert('⚠️ 至少需要保留一个模型！'); return; }
+                    if(confirm(`确定要移除模型 [${OS_DATA.settings.activeModel}] 吗？`)) {
+                        OS_DATA.settings.modelList = OS_DATA.settings.modelList.filter(m => m !== OS_DATA.settings.activeModel);
+                        OS_DATA.settings.activeModel = OS_DATA.settings.modelList[0]; saveSystemData(); renderModelOptions();
+                    }
+                };
+
+                win.querySelector('.os-window-close').onclick = () => win.remove();
+                bindWindowDragAndResize(win, win.querySelector('.os-window-header'), win.querySelector('.os-window-resize-handle'));
             }
-        });
-    });
-</script>
 
+            // --- 窗口拖动和拉伸 ---
+            function bindWindowDragAndResize(win, header, resizeHandle) {
+                let isDragging = false; let shiftX, shiftY;
+                header.addEventListener('mousedown', (e) => {
+                    if(e.target.closest('.os-window-close') || e.target.closest('.win-btn-save')) return;
+                    isDragging = true; shiftX = e.clientX - win.getBoundingClientRect().left; shiftY = e.clientY - win.getBoundingClientRect().top;
+                    document.body.style.userSelect = 'none';
+                });
+                let isResizing = false; let startW, startH, startX, startY;
+                resizeHandle.addEventListener('mousedown', (e) => {
+                    e.stopPropagation(); e.preventDefault(); isResizing = true;
+                    startW = win.offsetWidth; startH = win.offsetHeight; startX = e.clientX; startY = e.clientY;
+                });
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragging) { let left = e.clientX - shiftX; let top = e.clientY - shiftY; if(top < 0) top = 0; win.style.left = left + 'px'; win.style.top = top + 'px'; }
+                    if (isResizing) { win.style.width = Math.max(450, startW + (e.clientX - startX)) + 'px'; win.style.height = Math.max(300, startH + (e.clientY - startY)) + 'px'; }
+                });
+                document.addEventListener('mouseup', () => { isDragging = false; isResizing = false; document.body.style.userSelect = ''; });
+            }
+
+            // --- 字号无级缩放 ---
+            function bindCtrlWheelZoom(element) {
+                element.addEventListener('wheel', function(e) {
+                    if (e.ctrlKey) {
+                        e.preventDefault(); let computed = window.getComputedStyle(this); let size = parseFloat(computed.fontSize) || 14;
+                        size = e.deltaY < 0 ? Math.min(45, size + 1) : Math.max(10, size - 1); this.style.fontSize = size + 'px';
+                    }
+                }, { passive: false });
+            }
+
+            renderSidebarFiles();
+        })();
+    </script>
 </body>
 </html>
